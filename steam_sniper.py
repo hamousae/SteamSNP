@@ -121,10 +121,11 @@ def send_webhook(payload):
 def notify_free(name, appid):
     log(f"🎉 GRATUIT : {name}")
     send_webhook({
+        "content": "@everyone",
         "embeds": [{
             "title": name,
             "url": f"https://store.steampowered.com/app/{appid}",
-            "description": "@everyone 🎉 **Ce jeu est maintenant GRATUIT sur Steam !**",
+            "description": "🎉 **Ce jeu est maintenant GRATUIT sur Steam !**",
             "color": 5814783,
             "thumbnail": {"url": f"https://cdn.akamai.steamstatic.com/steam/apps/{appid}/header.jpg"},
             "footer": {"text": "Steam Freebie Sniper"}
@@ -133,9 +134,10 @@ def notify_free(name, appid):
 
 def notify_start():
     send_webhook({
+        "content": "@everyone",
         "embeds": [{
             "title": "Scan Steam en cours...",
-            "description": "@everyone 🔍 Vérification des prix Steam en cours",
+            "description": "🔍 Vérification des prix Steam en cours",
             "color": 15105570,
             "footer": {"text": "Steam Freebie Sniper"}
         }]
@@ -143,9 +145,10 @@ def notify_start():
 
 def notify_none():
     send_webhook({
+        "content": "@everyone",
         "embeds": [{
             "title": "Aucun jeu gratuit détecté",
-            "description": "Aucun jeux est devenue gratuit @everyone",
+            "description": "Aucun jeu n'est devenu gratuit cette fois-ci.",
             "color": 3553599,
             "footer": {"text": "Steam Freebie Sniper"}
         }]
