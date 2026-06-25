@@ -2,8 +2,19 @@ name: Steam Freebie Sniper
 
 on:
   schedule:
-    - cron: '0 12 * * *'
-  workflow_dispatch:
+    # Créneaux UTC (France = UTC+2 en été, UTC+1 en hiver)
+    # Pour cibler 00h00, 02h30, 05h00, 07h30, 10h00, 12h30, 15h00, 17h30, 20h00, 22h30 (heure FR été)
+    - cron: '0 22 * * *'   # → 00h00 FR
+    - cron: '30 0 * * *'   # → 02h30 FR
+    - cron: '0 3 * * *'    # → 05h00 FR
+    - cron: '30 5 * * *'   # → 07h30 FR
+    - cron: '0 8 * * *'    # → 10h00 FR
+    - cron: '30 10 * * *'  # → 12h30 FR
+    - cron: '0 13 * * *'   # → 15h00 FR
+    - cron: '30 15 * * *'  # → 17h30 FR
+    - cron: '0 18 * * *'   # → 20h00 FR
+    - cron: '30 20 * * *'  # → 22h30 FR
+  workflow_dispatch: # Lancement manuel depuis GitHub
 
 concurrency:
   group: steam-scan
@@ -23,8 +34,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: games_cache.json
-          key: steam-cache-v1-${{ github.run_id }}
-          restore-keys: steam-cache-v1-
+          # Clé fixe = le cache est toujours réutilisé entre les runs
+          key: steam-games-cache
+          restore-keys: steam-games-cache
 
       - run: pip install requests
 
@@ -35,7 +47,8 @@ jobs:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
       - name: Save cache
+        if: always()
         uses: actions/cache@v4
         with:
           path: games_cache.json
-          key: steam-cache-v1-${{ github.run_id }}
+          key: steam-games-cache

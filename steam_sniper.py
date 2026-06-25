@@ -10,14 +10,26 @@ import json
 import time
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, time as dtime
 
 # ═══════════════════════════════════════════════
 #  CONFIGURATION
 # ═══════════════════════════════════════════════
 STEAM_API_KEY = os.getenv("STEAM_API_KEY", "")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
-SCAN_INTERVAL = 2.5      # heures entre chaque scan
+# Créneaux fixes de scan (heure, minute) — toutes les 2h30
+SCAN_SLOTS = [
+    dtime(0,  0),   # 00h00
+    dtime(2,  30),  # 02h30
+    dtime(5,  0),   # 05h00
+    dtime(7,  30),  # 07h30
+    dtime(10, 0),   # 10h00
+    dtime(12, 30),  # 12h30
+    dtime(15, 0),   # 15h00
+    dtime(17, 30),  # 17h30
+    dtime(20, 0),   # 20h00
+    dtime(22, 30),  # 22h30
+]
 BATCH_SIZE = 50          # apps par requête appdetails (50 pour moins de rate limit)
 DELAY = 3.0              # secondes entre chaque batch (évite le rate limit)
 CACHE_FILE = "games_cache.json"
@@ -129,6 +141,16 @@ def notify_start():
         }]
     })
 
+def notify_none():
+    send_webhook({
+        "embeds": [{
+            "title": "Aucun jeu gratuit détecté",
+            "description": "Aucun jeux est devenue gratuit @everyone",
+            "color": 3553599,
+            "footer": {"text": "Steam Freebie Sniper"}
+        }]
+    })
+
 def scan():
     cache = load_cache()
     apps = get_all_apps()
@@ -210,6 +232,8 @@ def scan():
     print()
     log(f"Scan terminé ! {len(freebies)} jeu(x) devenu(s) gratuit(s).")
     log(f"Cache: {len(cache)} jeux dont {stats['free']} gratuits")
+    if not freebies:
+        notify_none()
     return freebies
 
 def main():
@@ -235,9 +259,27 @@ def main():
         debut = time.time()
         scan()
         duree = (time.time() - debut) / 3600
-        prochain = SCAN_INTERVAL
-        log(f"Scan: {duree:.1f}h | Prochain scan dans {prochain:.1f}h")
-        time.sleep(prochain * 3600)
+
+        # Calcule le prochain créneau
+        now = datetime.now()
+        current_slot = now.time().replace(second=0, microsecond=0)
+        next_slot = None
+        for slot in SCAN_SLOTS:
+            if slot > current_slot:
+                next_slot = slot
+                break
+        if next_slot is None:
+            next_slot = SCAN_SLOTS[0]  # On repart au 1er créneau du lendemain
+
+        next_dt = datetime.combine(now.date(), next_slot)
+        if next_dt <= now:
+            from datetime import timedelta
+            next_dt += timedelta(days=1)
+
+        wait_sec = (next_dt - now).total_seconds()
+        wait_min = wait_sec / 60
+        log(f"Scan: {duree:.1f}h | Prochain scan à {next_slot.strftime('%H:%M')} (dans {wait_min:.0f} min)")
+        time.sleep(wait_sec)
 
 if __name__ == "__main__":
     main()
