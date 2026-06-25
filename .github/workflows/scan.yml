@@ -1,0 +1,41 @@
+name: Steam Freebie Sniper
+
+on:
+  schedule:
+    - cron: '30 */2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: steam-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: games_cache.json
+          key: steam-cache-v1-${{ github.run_id }}
+          restore-keys: steam-cache-v1-
+
+      - run: pip install requests
+
+      - name: Scan
+        run: python steam_sniper.py --once
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+
+      - name: Save cache
+        uses: actions/cache@v4
+        with:
+          path: games_cache.json
+          key: steam-cache-v1-${{ github.run_id }}
